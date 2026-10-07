@@ -1,0 +1,31 @@
+# Phân tích & Sửa lỗi Truy cập Thuộc tính Động bằng Dot Notation thay vì Bracket
+
+## 1. Mục tiêu
+- **Phân biệt Dot Notation và Bracket Notation:** Nắm vững cách truy cập thuộc tính tĩnh và thuộc tính động trong JavaScript Object.
+- **Sửa lỗi tính toán NaN:** Khắc phục lỗi truy cập thuộc tính `undefined` dẫn đến tính toán tổng tiền thanh toán bị lỗi.
+- **Thao tác Object an toàn:** Đảm bảo hệ thống tính toán giá phòng và phụ thu chính xác dựa trên cấu trúc dữ liệu khách sạn.
+
+---
+
+## 2. Phân tích Lỗi Kỹ Thuật (Bug Analysis)
+
+Chương trình hiện tại đang gặp một lỗi logic nghiêm trọng khi truy xuất giá phòng từ biến động:
+
+### Lỗi: Sử dụng Dot Notation cho biến động (Logic Error)
+- **Dòng code lỗi:** `const basePrice = bookingReservation.priceKey;`
+- **Nguyên nhân:** Khi sử dụng Dot Notation (toán tử dấu chấm `.`), JavaScript sẽ tìm kiếm một thuộc tính có tên chuỗi chính xác (literal name) là `"priceKey"` bên trong đối tượng `bookingReservation`. Do đối tượng này chỉ có các thuộc tính `bookingId`, `guestName`, `roomType`, `roomPrice`, và `checkInHour`, nó không tìm thấy `"priceKey"` và trả về `undefined`.
+- **Hậu quả:** Biến `basePrice` nhận giá trị `undefined`. Khi tính toán phụ thu (`surcharge = undefined * 0.3`), kết quả trả về `NaN`. Hệ lụy kéo theo là tổng tiền thanh toán (`totalAmount`) cũng bị lỗi `NaN`, làm hỏng toàn bộ hóa đơn của khách hàng.
+- **Giải pháp:** Sử dụng Bracket Notation (toán tử ngoặc vuông `[]`) khi truy cập thuộc tính thông qua một biến. Sửa thành `bookingReservation[priceKey]`. Lúc này, trình biên dịch sẽ đánh giá biến `priceKey` thành giá trị chuỗi `"roomPrice"`, và tiến hành tìm kiếm thuộc tính `"roomPrice"` trong đối tượng, trả về đúng giá trị `1500000`.
+
+---
+
+## 3. Bảng Test Cases (Kiểm thử)
+
+Dưới đây là các trường hợp kiểm thử đối chứng giữa đoạn mã sai ban đầu và đoạn mã đã được sửa lỗi:
+
+| Trường hợp kiểm thử | Dữ liệu đầu vào (Input) | Kết quả sai thực tế (Mã cũ) | Kết quả đúng mong đợi (Mã mới) |
+| :--- | :--- | :--- | :--- |
+| **TC01: Nhận phòng sớm (checkInHour < 12)** | `checkInHour = 9`<br>`roomPrice = 1500000` | - `basePrice = undefined`<br>- `surcharge = NaN`<br>- `totalAmount = NaN` | - `basePrice = 1500000`<br>- `surcharge = 450000`<br>- `totalAmount = 1950000` |
+| **TC02: Nhận phòng đúng giờ (checkInHour >= 12)** | `checkInHour = 14`<br>`roomPrice = 1500000` | - `basePrice = undefined`<br>- `surcharge = 0`<br>- `totalAmount = NaN` (do `undefined + 0`) | - `basePrice = 1500000`<br>- `surcharge = 0`<br>- `totalAmount = 1500000` |
+
+> *Ghi chú TC02: Ở mã cũ, mặc dù `surcharge` được khởi tạo bằng `0` và không bị tính toán lại, nhưng phép cộng `totalAmount = basePrice + surcharge` tương đương với `undefined + 0` vẫn sẽ cho ra kết quả `NaN`.*
